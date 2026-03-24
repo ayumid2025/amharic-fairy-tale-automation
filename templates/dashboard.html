@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head><title>Dashboard</title></head>
+<body>
+    <h1>Welcome, {{ current_user.username }}!</h1>
+    <p>Credits: {{ credits }}</p>
+    <form action="/generate" method="post">
+        <label>Topic (e.g., ወርቃማዋ ወፍ):</label><br>
+        <input type="text" name="topic" required><br>
+        <label>Character (e.g., አዜብ):</label><br>
+        <input type="text" name="character" required><br>
+        <button type="submit">Generate Video (1 credit)</button>
+    </form>
+    <hr>
+    <h2>Your Videos</h2>
+    <ul>
+    {% for video in videos %}
+        <li><a href="{{ video.s3_url }}">{{ video.title }}</a> - {{ video.created_at }}</li>
+    {% else %}
+        <li>No videos yet.</li>
+    {% endfor %}
+    </ul>
+    <hr>
+    <h2>Batch Jobs</h2>
+    <p><a href="/batch">Upload CSV for batch generation</a></p>
+    <ul>
+    {% for batch in batches %}
+        <li><a href="/batch/{{ batch.id }}">Batch #{{ batch.id }}</a> ({{ batch.status }}) - {{ batch.created_at }}</li>
+    {% else %}
+        <li>No batches.</li>
+    {% endfor %}
+    </ul>
+    <hr>
+    <p><a href="/credits">Buy Credits</a> | <a href="/logout">Logout</a></p>
+</body>
+</html>
