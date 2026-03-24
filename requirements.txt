@@ -1,0 +1,15 @@
+flask
+flask-login
+flask-sqlalchemy
+celery
+redis
+boto3
+stripe
+requests
+moviepy
+pydub
+pillow
+azure-cognitiveservices-speech
+transformers
+torch
+numpy
