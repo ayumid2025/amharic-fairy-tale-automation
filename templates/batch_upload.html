@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><title>Batch Upload</title></head>
+<body>
+    <h1>Upload CSV for Batch Generation</h1>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}<ul>{% for m in messages %}<li>{{ m }}</li>{% endfor %}</ul>{% endif %}
+    {% endwith %}
+    <form action="/batch" method="post" enctype="multipart/form-data">
+        <label>CSV file (columns: topic, character):</label><br>
+        <input type="file" name="csv_file" accept=".csv" required><br><br>
+        <button type="submit">Upload and Process</button>
+    </form>
+    <p><a href="/dashboard">Back to Dashboard</a></p>
+</body>
+</html>
