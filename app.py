@@ -6,6 +6,9 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from models import db, User, Video, BatchJob, BatchVideo
 from tasks import generate_video_task, process_batch_video_task
 import stripe
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
@@ -26,6 +29,12 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # ------------------ Authentication ------------------
+@app.route('/')
+def index():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    return render_template('index.html')
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -62,12 +71,6 @@ def logout():
     return redirect(url_for('index'))
 
 # ------------------ Dashboard & Generation ------------------
-@app.route('/')
-def index():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    return render_template('index.html')  # a landing page
-
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -84,7 +87,6 @@ def generate():
     character = request.form.get('character')
     if not topic or not character:
         return jsonify({'error': 'Topic and character are required'}), 400
-    # Deduct credit
     current_user.credits -= 1
     db.session.commit()
     task = generate_video_task.delay(topic, character, current_user.id)
@@ -129,10 +131,8 @@ def batch_upload():
         if current_user.credits < len(rows):
             flash(f'Insufficient credits. You need {len(rows)} credits, you have {current_user.credits}.')
             return redirect(url_for('batch_upload'))
-        # Deduct credits
         current_user.credits -= len(rows)
         db.session.commit()
-        # Create batch job
         batch = BatchJob(
             user_id=current_user.id,
             csv_filename=file.filename,
@@ -141,7 +141,6 @@ def batch_upload():
         )
         db.session.add(batch)
         db.session.commit()
-        # Create BatchVideo entries and start tasks
         for idx, row in enumerate(rows):
             bv = BatchVideo(
                 batch_id=batch.id,
@@ -208,8 +207,6 @@ def create_checkout_session():
 @app.route('/payment-success')
 @login_required
 def payment_success():
-    # Stripe will redirect here. We can optionally display a success message.
-    # Credits are added via webhook.
     flash('Payment successful! Credits have been added.')
     return redirect(url_for('credits'))
 
@@ -230,13 +227,12 @@ def stripe_webhook():
         session = event['data']['object']
         user_id = session.get('client_reference_id')
         if user_id:
-            # Map price_id to credits (you must configure prices in Stripe)
-            # For simplicity, assume you have prices with metadata "credits"
+            # You need to map the price_id to credits. For demo, hardcode.
+            # Better to store in DB.
             line_items = stripe.checkout.Session.list_line_items(session['id'])
             if line_items and line_items.data:
                 price_id = line_items.data[0].price.id
-                # You should store price-to-credits mapping in DB or config
-                # Here's a hardcoded example:
+                # Example mapping (replace with your actual price IDs)
                 credits_map = {
                     'price_123': 10,
                     'price_456': 50,
@@ -257,7 +253,6 @@ def download(filename):
     # For local files (if not using S3)
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 
-# ------------------ Run ------------------
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
