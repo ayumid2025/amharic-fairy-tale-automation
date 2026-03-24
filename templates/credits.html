@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head><title>Buy Credits</title>
+<script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <h1>Buy Credits</h1>
+    <form id="payment-form">
+        <label>Select package:</label>
+        <select id="price_id">
+            <option value="price_123">10 credits - $10</option>
+            <option value="price_456">50 credits - $40</option>
+        </select>
+        <button type="submit">Buy</button>
+    </form>
+    <script>
+        const stripe = Stripe('{{ publishable_key }}');
+        const form = document.getElementById('payment-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const priceId = document.getElementById('price_id').value;
+            const response = await fetch('/create-checkout-session', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({price_id: priceId})
+            });
+            const session = await response.json();
+            const result = await stripe.redirectToCheckout({sessionId: session.id});
+            if (result.error) alert(result.error.message);
+        });
+    </script>
+</body>
+</html>
