@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head><title>Batch Status</title>
+<script>
+function fetchStatus() {
+    fetch('/batch/{{ batch.id }}/status')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('progress').innerText = `${data.completed}/${data.total} completed (${data.failed} failed)`;
+            if (data.status === 'COMPLETED') {
+                document.getElementById('download_link').innerHTML = `<a href="${data.zip_url}">Download ZIP</a>`;
+                clearInterval(interval);
+            } else if (data.status === 'FAILED') {
+                document.getElementById('download_link').innerHTML = 'Batch failed.';
+                clearInterval(interval);
+            }
+            let list = document.getElementById('videos');
+            list.innerHTML = '';
+            data.videos.forEach(v => {
+                let li = document.createElement('li');
+                li.textContent = `${v.topic} - ${v.character}: ${v.status} ${v.error ? '('+v.error+')' : ''}`;
+                list.appendChild(li);
+            });
+        });
+}
+let interval = setInterval(fetchStatus, 2000);
+</script>
+</head>
+<body>
+    <h1>Batch Status</h1>
+    <p>Progress: <span id="progress">0/0</span></p>
+    <div id="download_link"></div>
+    <h2>Videos:</h2>
+    <ul id="videos"></ul>
+    <p><a href="/dashboard">Back to Dashboard</a></p>
+</body>
+</html>
